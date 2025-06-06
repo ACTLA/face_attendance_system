@@ -3,7 +3,7 @@
 """
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                            QLineEdit, QPushButton, QFileDialog, QMessageBox,
-                           QFormLayout, QFrame)
+                           QFormLayout, QFrame, QWidget)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPixmap, QPainter, QBrush
 
@@ -27,7 +27,7 @@ class AddEmployeeDialog(QDialog):
     def init_ui(self):
         """Инициализация интерфейса"""
         self.setWindowTitle("Add Employee")
-        self.setFixedSize(800, 600)
+        self.resize(800, 600)
         
         # Основной layout
         main_layout = QHBoxLayout()

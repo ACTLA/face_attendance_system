@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                            QPushButton, QFrame, QListWidget, QListWidgetItem)
 from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QDateTime
-from PyQt5.QtGui import QFont, QPixmap, QImage, QPainter, QBrush, QColor
+from PyQt5.QtGui import QFont, QPixmap, QImage, QPainter, QBrush, QColor, QRegion
 
 import cv2
 import numpy as np

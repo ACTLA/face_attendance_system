@@ -20,7 +20,7 @@ class LoginWindow(QWidget):
     
     def init_ui(self):
         self.setWindowTitle(f"Login - {WINDOW_TITLE}")
-        self.setFixedSize(900, 600)
+        self.resize(900, 600)
         
         # Основной layout
         main_layout = QHBoxLayout()
