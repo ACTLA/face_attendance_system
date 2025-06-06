@@ -1,0 +1,12 @@
+PyQt5
+setuptools
+opencv-python
+face-recognition
+dlib
+SQLAlchemy
+alembic
+numpy
+Pillow
+python-dateutil
+pandas
+openpyxl
