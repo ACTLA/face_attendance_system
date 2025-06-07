@@ -322,7 +322,7 @@ class MainWindow(QMainWindow):
         
         header_layout.addStretch()
         
-        add_btn = QPushButton("➕ Добавить пользователя")
+        add_btn = QPushButton("Добавить пользователя")
         add_btn.setFont(QFont("Arial", 12))
         add_btn.setCursor(Qt.PointingHandCursor)
         add_btn.setMinimumHeight(40)
@@ -521,7 +521,7 @@ class MainWindow(QMainWindow):
                 self.users_table.setItem(i, 3, QTableWidgetItem(formatted_date))
                 
                 # Кнопка удаления
-                delete_btn = QPushButton("🗑️ Удалить")
+                delete_btn = QPushButton("Удалить")
                 delete_btn.setCursor(Qt.PointingHandCursor)
                 delete_btn.setStyleSheet("""
                     QPushButton {
