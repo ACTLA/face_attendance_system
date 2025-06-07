@@ -1,5 +1,5 @@
 """
-Пакет пользовательского интерфейса
+Пакет пользовательского интерфейса для системы распознавания лиц
 """
 from .login_window import LoginWindow
 from .main_window import MainWindow

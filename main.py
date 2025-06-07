@@ -1,159 +1,66 @@
 """
-Главный файл запуска автоматизированной системы распознавания лиц
+Главный файл запуска упрощенной системы распознавания лиц
 """
 import sys
 import os
-from PyQt5.QtWidgets import QApplication, QMessageBox, QSplashScreen
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QPixmap, QFont, QColor
+import logging
+from pathlib import Path
 
-# Добавление текущей директории в путь
+# Добавление путей для импорта
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from PyQt5.QtWidgets import QApplication, QMessageBox, QSplashScreen, QLabel
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPixmap, QFont, QPainter, QLinearGradient, QBrush, QColor
+
+from config import (WINDOW_TITLE, LOG_LEVEL, LOG_FORMAT, 
+                   LOG_MAX_BYTES, LOG_BACKUP_COUNT, LOGS_DIR)
 from ui.login_window import LoginWindow
 from ui.main_window import MainWindow
-from config import (WINDOW_TITLE, COMPANY_NAME, WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
 
-class FaceRecognitionApp:
-    def __init__(self):
-        self.app = QApplication(sys.argv)
-        self.app.setApplicationName(WINDOW_TITLE)
-        self.app.setOrganizationName(COMPANY_NAME)
+def setup_logging():
+    """Настройка логирования"""
+    try:
+        # Создание директории для логов
+        LOGS_DIR.mkdir(exist_ok=True)
         
-        # Установка стиля приложения
-        self.app.setStyle('Fusion')
+        # Настройка логирования
+        from logging.handlers import RotatingFileHandler
         
-        # Глобальные стили
-        self.app.setStyleSheet("""
-            QWidget {
-                font-family: 'Segoe UI', 'Arial', sans-serif;
-            }
-            QMessageBox {
-                background-color: white;
-                min-width: 300px;
-            }
-            QMessageBox QPushButton {
-                min-width: 80px;
-                min-height: 35px;
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-weight: bold;
-            }
-            QMessageBox QLabel {
-                min-height: 50px;
-                font-size: 14px;
-            }
-            QScrollBar:vertical {
-                background-color: #f0f0f0;
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #c0c0c0;
-                border-radius: 6px;
-                min-height: 20px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #a0a0a0;
-            }
-            QScrollBar:horizontal {
-                background-color: #f0f0f0;
-                height: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:horizontal {
-                background-color: #c0c0c0;
-                border-radius: 6px;
-                min-width: 20px;
-            }
-            QScrollBar::handle:horizontal:hover {
-                background-color: #a0a0a0;
-            }
-        """)
+        # Корневой логгер
+        root_logger = logging.getLogger()
+        root_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
         
-        self.login_window = None
-        self.main_window = None
+        # Очистка существующих обработчиков
+        for handler in root_logger.handlers[:]:
+            root_logger.removeHandler(handler)
         
-        # Показ splash screen
-        self.show_splash_screen()
-    
-    def show_splash_screen(self):
-        """Показ заставки при запуске"""
-        # Создание простой заставки
-        splash = QSplashScreen()
-        splash.setFixedSize(400, 300)
+        # Форматтер
+        formatter = logging.Formatter(LOG_FORMAT)
         
-        # Создание pixmap для заставки
-        pixmap = QPixmap(400, 300)
-        pixmap.fill(Qt.white)
+        # Консольный обработчик
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        root_logger.addHandler(console_handler)
         
-        from PyQt5.QtGui import QPainter, QLinearGradient, QBrush, QColor
-        painter = QPainter(pixmap)
+        # Файловый обработчик
+        log_file = LOGS_DIR / 'face_recognition.log'
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=LOG_MAX_BYTES,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding='utf-8'
+        )
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
         
-        # Градиентный фон
-        gradient = QLinearGradient(0, 0, 400, 300)
-        gradient.setColorAt(0, QColor.fromRgb(102, 126, 234))
-        gradient.setColorAt(1, QColor.fromRgb(118, 75, 162))
-        painter.fillRect(0, 0, 400, 300, QBrush(gradient))
+        logging.info("Логирование настроено успешно")
         
-        # Текст
-        painter.setPen(Qt.white)
-        painter.setFont(QFont("Arial", 24, QFont.Bold))
-        painter.drawText(20, 100, 360, 50, Qt.AlignCenter, COMPANY_NAME)
-        
-        painter.setFont(QFont("Arial", 16))
-        painter.drawText(20, 150, 360, 30, Qt.AlignCenter, "Автоматизированная система")
-        painter.drawText(20, 180, 360, 30, Qt.AlignCenter, "распознавания лиц")
-        
-        painter.setFont(QFont("Arial", 12))
-        painter.drawText(20, 250, 360, 30, Qt.AlignCenter, "Загрузка...")
-        
-        painter.end()
-        
-        splash.setPixmap(pixmap)
-        splash.show()
-        
-        # Обработка событий для отображения заставки
-        self.app.processEvents()
-        
-        # Таймер для скрытия заставки
-        QTimer.singleShot(2000, lambda: self.hide_splash_and_show_login(splash))
-    
-    def hide_splash_and_show_login(self, splash):
-        """Скрытие заставки и показ окна входа"""
-        splash.close()
-        self.show_login()
-    
-    def run(self):
-        """Запуск приложения"""
-        return self.app.exec_()
-    
-    def show_login(self):
-        """Показать окно входа"""
-        self.login_window = LoginWindow()
-        self.login_window.login_successful.connect(self.on_login_success)
-        self.login_window.show()
-    
-    def on_login_success(self, admin_data):
-        """Обработка успешного входа"""
-        self.login_window.close()
-        self.main_window = MainWindow(admin_data)
-        
-        # Центрирование и размеры главного окна
-        from PyQt5.QtWidgets import QDesktopWidget
-        desktop = QDesktopWidget()
-        screen_rect = desktop.screenGeometry()
-        
-        # Центрирование окна
-        window_size = self.main_window.geometry()
-        x = max(0, (screen_rect.width() - window_size.width()) // 2)
-        y = max(0, (screen_rect.height() - window_size.height()) // 2)
-        self.main_window.move(x, y)
-        
-        self.main_window.show()
+    except Exception as e:
+        print(f"Ошибка настройки логирования: {e}")
 
 def check_dependencies():
-    """Проверка зависимостей"""
+    """Проверка необходимых зависимостей"""
     missing_deps = []
     
     try:
@@ -177,67 +84,222 @@ def check_dependencies():
         missing_deps.append("PyQt5")
     
     if missing_deps:
-        app = QApplication(sys.argv)
-        error_msg = (
-            "Отсутствуют необходимые библиотеки:\n\n" +
-            "\n".join(f"• {dep}" for dep in missing_deps) +
-            "\n\nУстановите их с помощью команды:\n" +
-            f"pip install {' '.join(missing_deps)}"
-        )
-        QMessageBox.critical(None, "Ошибка зависимостей", error_msg)
-        sys.exit(1)
+        return missing_deps
+    
+    return None
 
-def create_directories():
-    """Создание необходимых директорий"""
-    from config import USER_PHOTOS_DIR, DATA_DIR, RESOURCES_DIR
-    
-    directories = [
-        DATA_DIR,
-        USER_PHOTOS_DIR,
-        RESOURCES_DIR / 'icons'
-    ]
-    
-    for directory in directories:
-        os.makedirs(directory, exist_ok=True)
-
-def main():
-    """Точка входа в приложение"""
-    print("🚀 Запуск автоматизированной системы распознавания лиц...")
-    
-    # Проверка зависимостей
-    print("📦 Проверка зависимостей...")
-    check_dependencies()
-    
-    # Создание необходимых директорий
-    print("📁 Создание директорий...")
-    create_directories()
-    
-    # Проверка камеры
-    print("📷 Проверка доступности камеры...")
+def check_camera():
+    """Проверка доступности камеры"""
     try:
         import cv2
         cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            print("⚠️  Предупреждение: Камера недоступна. Функции распознавания могут не работать.")
-        else:
-            print("✅ Камера доступна")
-        cap.release()
-    except Exception as e:
-        print(f"⚠️  Предупреждение: Ошибка при проверке камеры: {e}")
+        if cap.isOpened():
+            ret, frame = cap.read()
+            cap.release()
+            return ret and frame is not None
+        return False
+    except Exception:
+        return False
+
+class FaceRecognitionApp:
+    """Главный класс приложения"""
     
-    # Запуск приложения
-    print("🎯 Запуск приложения...")
-    app = FaceRecognitionApp()
+    def __init__(self):
+        self.app = QApplication(sys.argv)
+        self.app.setApplicationName(WINDOW_TITLE)
+        
+        # Установка стиля
+        self.app.setStyle('Fusion')
+        
+        # Глобальные стили
+        self.app.setStyleSheet("""
+            QWidget {
+                font-family: 'Segoe UI', 'Arial', sans-serif;
+            }
+            QMessageBox {
+                background-color: white;
+                min-width: 300px;
+            }
+            QMessageBox QPushButton {
+                min-width: 80px;
+                min-height: 30px;
+                padding: 6px 12px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QScrollBar:vertical {
+                background-color: #f0f0f0;
+                width: 12px;
+                border-radius: 6px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #c0c0c0;
+                border-radius: 6px;
+                min-height: 20px;
+            }
+        """)
+        
+        self.login_window = None
+        self.main_window = None
+        
+        logging.info("Приложение инициализировано")
+    
+    def show_splash_screen(self):
+        """Показ заставки при запуске"""
+        splash = QSplashScreen()
+        splash.setFixedSize(400, 250)
+        
+        # Создание pixmap для заставки
+        pixmap = QPixmap(400, 250)
+        pixmap.fill(Qt.white)
+        
+        painter = QPainter(pixmap)
+        
+        # Градиентный фон
+        gradient = QLinearGradient(0, 0, 400, 250)
+        gradient.setColorAt(0, QColor.fromRgb(59, 93, 212))
+        gradient.setColorAt(1, QColor.fromRgb(118, 75, 162))
+        painter.fillRect(0, 0, 400, 250, QBrush(gradient))
+        
+        
+        painter.setFont(QFont("Arial", 14))
+        painter.drawText(20, 120, 360, 25, Qt.AlignCenter, "Система распознавания лиц")
+        
+        painter.setFont(QFont("Arial", 12))
+        painter.drawText(20, 200, 360, 25, Qt.AlignCenter, "Загрузка...")
+        
+        painter.end()
+        
+        splash.setPixmap(pixmap)
+        splash.show()
+        
+        # Обработка событий
+        self.app.processEvents()
+        
+        # Автоматическое скрытие через 2 секунды
+        QTimer.singleShot(2000, lambda: self.hide_splash_and_show_login(splash))
+        
+        return splash
+    
+    def hide_splash_and_show_login(self, splash):
+        """Скрытие заставки и показ окна входа"""
+        splash.close()
+        self.show_login()
+    
+    def show_login(self):
+        """Показать окно входа"""
+        self.login_window = LoginWindow()
+        self.login_window.login_successful.connect(self.on_login_success)
+        self.login_window.show()
+        logging.info("Показано окно входа")
+    
+    def on_login_success(self, admin_data):
+        """Обработка успешного входа"""
+        logging.info(f"Успешный вход пользователя: {admin_data['username']}")
+        
+        if self.login_window:
+            self.login_window.close()
+        
+        self.main_window = MainWindow(admin_data)
+        self.main_window.show()
+        
+        logging.info("Показано главное окно")
+    
+    def run(self):
+        """Запуск приложения"""
+        try:
+            # Показ заставки
+            splash = self.show_splash_screen()
+            
+            # Запуск основного цикла
+            return self.app.exec_()
+            
+        except Exception as e:
+            logging.error(f"Критическая ошибка приложения: {e}")
+            QMessageBox.critical(None, "Критическая ошибка", 
+                               f"Произошла критическая ошибка:\n{str(e)}")
+            return 1
+
+def main():
+    """Точка входа в приложение"""
+    print("🚀 Запуск системы распознавания лиц...")
     
     try:
+        # Настройка логирования
+        setup_logging()
+        logging.info("=" * 50)
+        logging.info("Запуск системы распознавания лиц")
+        logging.info("=" * 50)
+        
+        # Проверка зависимостей
+        print("📦 Проверка зависимостей...")
+        missing_deps = check_dependencies()
+        
+        if missing_deps:
+            error_msg = (
+                "Отсутствуют необходимые библиотеки:\n\n" +
+                "\n".join(f"• {dep}" for dep in missing_deps) +
+                "\n\nУстановите их с помощью команды:\n" +
+                f"pip install {' '.join(missing_deps)}"
+            )
+            
+            # Показываем ошибку через GUI если возможно
+            try:
+                app = QApplication(sys.argv)
+                QMessageBox.critical(None, "Ошибка зависимостей", error_msg)
+            except:
+                print(error_msg)
+            
+            logging.error(f"Отсутствуют зависимости: {missing_deps}")
+            return 1
+        
+        logging.info("Все зависимости найдены")
+        
+        # Проверка камеры
+        print("📷 Проверка камеры...")
+        if check_camera():
+            print("✅ Камера доступна")
+            logging.info("Камера доступна")
+        else:
+            print("⚠️  Предупреждение: Камера недоступна")
+            logging.warning("Камера недоступна - функции распознавания могут не работать")
+        
+        # Создание необходимых директорий
+        from config import DATA_DIR, USER_PHOTOS_DIR
+        for directory in [DATA_DIR, USER_PHOTOS_DIR, LOGS_DIR]:
+            directory.mkdir(exist_ok=True)
+        
+        logging.info("Необходимые директории созданы")
+        
+        # Запуск приложения
+        print("🎯 Запуск приложения...")
+        app = FaceRecognitionApp()
         exit_code = app.run()
+        
+        logging.info(f"Приложение завершено с кодом: {exit_code}")
         print("👋 Приложение завершено")
-        sys.exit(exit_code)
+        
+        return exit_code
+        
+    except KeyboardInterrupt:
+        print("\n⏹️ Приложение прервано пользователем")
+        logging.info("Приложение прервано пользователем")
+        return 0
+        
     except Exception as e:
-        print(f"❌ Критическая ошибка: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+        error_msg = f"Критическая ошибка: {str(e)}"
+        print(f"❌ {error_msg}")
+        logging.critical(error_msg, exc_info=True)
+        
+        # Показываем ошибку через GUI если возможно
+        try:
+            app = QApplication(sys.argv)
+            QMessageBox.critical(None, "Критическая ошибка", error_msg)
+        except:
+            pass
+        
+        return 1
 
 if __name__ == "__main__":
-    main()
+    exit_code = main()
+    sys.exit(exit_code)
