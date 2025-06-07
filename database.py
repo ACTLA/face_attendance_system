@@ -1,5 +1,5 @@
 """
-Модуль работы с базой данных SQLite
+Модуль работы с базой данных SQLite для системы распознавания лиц
 """
 import sqlite3
 from datetime import datetime
@@ -22,9 +22,9 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        # Таблица пользователей (администраторов)
+        # Таблица администраторов системы
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS admins (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 email TEXT UNIQUE NOT NULL,
@@ -34,46 +34,42 @@ class Database:
             )
         ''')
         
-        # Таблица сотрудников
+        # Таблица пользователей для распознавания
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS employees (
+            CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                employee_id TEXT UNIQUE NOT NULL,
+                user_id TEXT UNIQUE NOT NULL,
                 full_name TEXT NOT NULL,
-                designation TEXT,
-                department TEXT,
-                email TEXT,
-                phone TEXT,
                 photo_path TEXT,
                 face_encoding TEXT,
                 is_active INTEGER DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_by INTEGER,
-                FOREIGN KEY (created_by) REFERENCES users (id)
+                FOREIGN KEY (created_by) REFERENCES admins (id)
             )
         ''')
         
-        # Таблица посещаемости
+        # Таблица логов распознавания
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS attendance (
+            CREATE TABLE IF NOT EXISTS recognition_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                employee_id INTEGER NOT NULL,
+                user_id INTEGER,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                attendance_type TEXT DEFAULT 'IN',
                 confidence REAL,
-                FOREIGN KEY (employee_id) REFERENCES employees (id)
+                recognition_type TEXT DEFAULT 'SUCCESS',
+                FOREIGN KEY (user_id) REFERENCES users (id)
             )
         ''')
         
-        # Таблица логов системы
+        # Таблица системных логов
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS system_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 event_type TEXT,
-                user_id INTEGER,
+                admin_id INTEGER,
                 details TEXT,
-                FOREIGN KEY (user_id) REFERENCES users (id)
+                FOREIGN KEY (admin_id) REFERENCES admins (id)
             )
         ''')
         
@@ -90,47 +86,55 @@ class Database:
         cursor = conn.cursor()
         
         # Проверка существования администратора
-        cursor.execute("SELECT id FROM users WHERE username = ?", (DEFAULT_ADMIN_USERNAME,))
+        cursor.execute("SELECT id FROM admins WHERE username = ?", (DEFAULT_ADMIN_USERNAME,))
         if not cursor.fetchone():
             password_hash = hashlib.sha256(DEFAULT_ADMIN_PASSWORD.encode()).hexdigest()
             cursor.execute(
-                "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                "INSERT INTO admins (username, email, password_hash) VALUES (?, ?, ?)",
                 (DEFAULT_ADMIN_USERNAME, 'admin@example.com', password_hash)
             )
             conn.commit()
         
         conn.close()
     
-    # === Методы для работы с пользователями ===
+    # === Методы для работы с администраторами ===
     
-    def authenticate_user(self, username, password):
-        """Аутентификация пользователя"""
+    def authenticate_admin(self, username, password):
+        """Аутентификация администратора"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         password_hash = hashlib.sha256(password.encode()).hexdigest()
         cursor.execute(
-            "SELECT id, username, email FROM users WHERE username = ? AND password_hash = ?",
+            "SELECT id, username, email FROM admins WHERE username = ? AND password_hash = ?",
             (username, password_hash)
         )
-        user = cursor.fetchone()
+        admin = cursor.fetchone()
         
-        if user:
+        if admin:
             # Обновление времени последнего входа
             cursor.execute(
-                "UPDATE users SET last_login = ? WHERE id = ?",
-                (datetime.now(), user[0])
+                "UPDATE admins SET last_login = ? WHERE id = ?",
+                (datetime.now(), admin[0])
             )
             conn.commit()
             
             # Логирование
-            self.add_log('login', user[0], f'User {username} logged in')
+            self.add_system_log('admin_login', admin[0], f'Admin {username} logged in')
+            
+            result = {
+                'id': admin[0],
+                'username': admin[1],
+                'email': admin[2]
+            }
+        else:
+            result = None
         
         conn.close()
-        return user
+        return result
     
-    def create_user(self, username, email, password):
-        """Создание нового пользователя"""
+    def create_admin(self, username, email, password):
+        """Создание нового администратора"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
@@ -138,7 +142,7 @@ class Database:
         
         try:
             cursor.execute(
-                "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                "INSERT INTO admins (username, email, password_hash) VALUES (?, ?, ?)",
                 (username, email, password_hash)
             )
             conn.commit()
@@ -149,98 +153,85 @@ class Database:
         conn.close()
         return result
     
-    # === Методы для работы с сотрудниками ===
+    # === Методы для работы с пользователями ===
     
-    def add_employee(self, employee_data, created_by):
-        """Добавление нового сотрудника"""
+    def add_user(self, user_data, created_by):
+        """Добавление нового пользователя"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         try:
             cursor.execute('''
-                INSERT INTO employees 
-                (employee_id, full_name, designation, department, email, phone, 
-                 photo_path, face_encoding, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users 
+                (user_id, full_name, photo_path, face_encoding, created_by)
+                VALUES (?, ?, ?, ?, ?)
             ''', (
-                employee_data['employee_id'],
-                employee_data['full_name'],
-                employee_data.get('designation', ''),
-                employee_data.get('department', ''),
-                employee_data.get('email', ''),
-                employee_data.get('phone', ''),
-                employee_data.get('photo_path', ''),
-                json.dumps(employee_data.get('face_encoding', [])),
+                user_data['user_id'],
+                user_data['full_name'],
+                user_data.get('photo_path', ''),
+                json.dumps(user_data.get('face_encoding', [])),
                 created_by
             ))
             conn.commit()
-            employee_id = cursor.lastrowid
+            user_id = cursor.lastrowid
             
             # Логирование
-            self.add_log('employee_added', created_by, 
-                        f'Added employee: {employee_data["full_name"]}')
+            self.add_system_log('user_added', created_by, 
+                        f'Added user: {user_data["full_name"]}')
             
-            result = employee_id
+            result = user_id
         except sqlite3.IntegrityError:
             result = None
         
         conn.close()
         return result
     
-    def get_all_employees(self, active_only=True):
-        """Получить всех сотрудников"""
+    def get_all_users(self, active_only=True):
+        """Получить всех пользователей"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        query = "SELECT * FROM employees"
+        query = "SELECT * FROM users"
         if active_only:
             query += " WHERE is_active = 1"
         query += " ORDER BY full_name"
         
         cursor.execute(query)
-        employees = cursor.fetchall()
+        users = cursor.fetchall()
         
         # Преобразование в словари
         result = []
-        for emp in employees:
+        for user in users:
             result.append({
-                'id': emp[0],
-                'employee_id': emp[1],
-                'full_name': emp[2],
-                'designation': emp[3],
-                'department': emp[4],
-                'email': emp[5],
-                'phone': emp[6],
-                'photo_path': emp[7],
-                'face_encoding': json.loads(emp[8]) if emp[8] else [],
-                'is_active': emp[9],
-                'created_at': emp[10]
+                'id': user[0],
+                'user_id': user[1],
+                'full_name': user[2],
+                'photo_path': user[3],
+                'face_encoding': json.loads(user[4]) if user[4] else [],
+                'is_active': user[5],
+                'created_at': user[6]
             })
         
         conn.close()
         return result
     
-    def get_employee_by_id(self, employee_id):
-        """Получить сотрудника по ID"""
+    def get_user_by_id(self, user_id):
+        """Получить пользователя по ID"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        cursor.execute("SELECT * FROM employees WHERE id = ?", (employee_id,))
-        emp = cursor.fetchone()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
         
-        if emp:
+        if user:
             result = {
-                'id': emp[0],
-                'employee_id': emp[1],
-                'full_name': emp[2],
-                'designation': emp[3],
-                'department': emp[4],
-                'email': emp[5],
-                'phone': emp[6],
-                'photo_path': emp[7],
-                'face_encoding': json.loads(emp[8]) if emp[8] else [],
-                'is_active': emp[9],
-                'created_at': emp[10]
+                'id': user[0],
+                'user_id': user[1],
+                'full_name': user[2],
+                'photo_path': user[3],
+                'face_encoding': json.loads(user[4]) if user[4] else [],
+                'is_active': user[5],
+                'created_at': user[6]
             }
         else:
             result = None
@@ -248,79 +239,79 @@ class Database:
         conn.close()
         return result
     
-    def delete_employee(self, employee_id):
-        """Удалить сотрудника (мягкое удаление)"""
+    def delete_user(self, user_id):
+        """Удалить пользователя (мягкое удаление)"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute(
-            "UPDATE employees SET is_active = 0 WHERE id = ?",
-            (employee_id,)
+            "UPDATE users SET is_active = 0 WHERE id = ?",
+            (user_id,)
         )
         conn.commit()
         conn.close()
     
-    # === Методы для работы с посещаемостью ===
+    # === Методы для работы с логами распознавания ===
     
-    def add_attendance(self, employee_id, attendance_type='IN', confidence=None):
-        """Добавить запись посещаемости"""
+    def add_recognition_log(self, user_id, confidence, recognition_type='SUCCESS'):
+        """Добавить лог распознавания"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute('''
-            INSERT INTO attendance (employee_id, attendance_type, confidence)
+            INSERT INTO recognition_logs (user_id, confidence, recognition_type)
             VALUES (?, ?, ?)
-        ''', (employee_id, attendance_type, confidence))
+        ''', (user_id, confidence, recognition_type))
         
         conn.commit()
-        attendance_id = cursor.lastrowid
+        log_id = cursor.lastrowid
         
         conn.close()
-        return attendance_id
+        return log_id
     
-    def get_last_attendance(self, employee_id):
-        """Получить последнюю отметку сотрудника"""
+    def get_last_recognition(self, user_id):
+        """Получить последнее распознавание пользователя"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT timestamp FROM attendance 
-            WHERE employee_id = ? 
+            SELECT timestamp FROM recognition_logs 
+            WHERE user_id = ? 
             ORDER BY timestamp DESC 
             LIMIT 1
-        ''', (employee_id,))
+        ''', (user_id,))
         
         result = cursor.fetchone()
         conn.close()
         
         return result[0] if result else None
     
-    def get_attendance_report(self, date_from=None, date_to=None, employee_id=None):
-        """Получить отчет по посещаемости"""
+    def get_recognition_report(self, date_from=None, date_to=None, user_id=None):
+        """Получить отчет по распознаванию"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         query = '''
-            SELECT a.*, e.full_name, e.employee_id, e.designation 
-            FROM attendance a
-            JOIN employees e ON a.employee_id = e.id
+            SELECT r.*, u.full_name, u.user_id 
+            FROM recognition_logs r
+            JOIN users u ON r.user_id = u.id
             WHERE 1=1
         '''
         params = []
         
         if date_from:
-            query += " AND DATE(a.timestamp) >= ?"
+            query += " AND DATE(r.timestamp) >= ?"
             params.append(date_from)
         
         if date_to:
-            query += " AND DATE(a.timestamp) <= ?"
+            query += " AND DATE(r.timestamp) <= ?"
             params.append(date_to)
         
-        if employee_id:
-            query += " AND a.employee_id = ?"
-            params.append(employee_id)
+        if user_id:
+            query += " AND r.user_id = ?"
+            params.append(user_id)
         
-        query += " ORDER BY a.timestamp DESC"
+        query += " ORDER BY r.timestamp DESC LIMIT 100"
         
         cursor.execute(query, params)
         records = cursor.fetchall()
@@ -329,26 +320,25 @@ class Database:
         for rec in records:
             result.append({
                 'id': rec[0],
-                'employee_id': rec[1],
+                'user_id': rec[1],
                 'timestamp': rec[2],
-                'attendance_type': rec[3],
-                'confidence': rec[4],
+                'confidence': rec[3],
+                'recognition_type': rec[4],
                 'full_name': rec[5],
-                'employee_code': rec[6],
-                'designation': rec[7]
+                'user_code': rec[6]
             })
         
         conn.close()
         return result
     
-    def get_today_attendance_count(self):
-        """Получить количество отметок за сегодня"""
+    def get_today_recognition_count(self):
+        """Получить количество распознаваний за сегодня"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT COUNT(DISTINCT employee_id) 
-            FROM attendance 
+            SELECT COUNT(*) 
+            FROM recognition_logs 
             WHERE DATE(timestamp) = DATE('now')
         ''')
         
@@ -357,30 +347,46 @@ class Database:
         
         return count
     
-    # === Методы для работы с логами ===
-    
-    def add_log(self, event_type, user_id, details):
-        """Добавить запись в лог"""
+    def get_unique_users_today(self):
+        """Получить количество уникальных пользователей за сегодня"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute('''
-            INSERT INTO system_logs (event_type, user_id, details)
+            SELECT COUNT(DISTINCT user_id) 
+            FROM recognition_logs 
+            WHERE DATE(timestamp) = DATE('now')
+        ''')
+        
+        count = cursor.fetchone()[0]
+        conn.close()
+        
+        return count
+    
+    # === Методы для работы с системными логами ===
+    
+    def add_system_log(self, event_type, admin_id, details):
+        """Добавить запись в системный лог"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO system_logs (event_type, admin_id, details)
             VALUES (?, ?, ?)
-        ''', (event_type, user_id, details))
+        ''', (event_type, admin_id, details))
         
         conn.commit()
         conn.close()
     
-    def get_recent_logs(self, limit=10):
-        """Получить последние записи логов"""
+    def get_recent_system_logs(self, limit=10):
+        """Получить последние системные логи"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         cursor.execute('''
-            SELECT l.*, u.username 
+            SELECT l.*, a.username 
             FROM system_logs l
-            LEFT JOIN users u ON l.user_id = u.id
+            LEFT JOIN admins a ON l.admin_id = a.id
             ORDER BY l.timestamp DESC
             LIMIT ?
         ''', (limit,))

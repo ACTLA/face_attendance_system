@@ -3,8 +3,8 @@
 """
 from .login_window import LoginWindow
 from .main_window import MainWindow
-from .add_employee_dialog import AddEmployeeDialog
-from .face_attendance_widget import FaceAttendanceWidget
+from .add_user_dialog import AddUserDialog
+from .face_recognition_widget import FaceRecognitionWidget
 
 __all__ = [
     'LoginWindow',
