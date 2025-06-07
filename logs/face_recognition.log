@@ -1,0 +1,205 @@
+2025-06-07 07:49:04 - database - INFO - База данных инициализирована успешно
+2025-06-07 07:49:04 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 07:49:04 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 07:49:23 - database - ERROR - Ошибка выполнения запроса: no such column: salt
+2025-06-07 07:53:39 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 07:53:39 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 07:53:39 - database_migration - INFO - Применение миграции 2: Обновление до новой схемы БД
+2025-06-07 07:53:39 - database_migration - ERROR - Ошибка применения миграции 2: no such column: permissions
+2025-06-07 07:53:39 - database - ERROR - Ошибка миграции БД: no such column: permissions
+2025-06-07 07:53:39 - database - ERROR - Ошибка выполнения запроса: module 'hashlib' has no attribute 'pbkdf2_hex'
+2025-06-07 07:53:39 - database - ERROR - Ошибка выполнения запроса: module 'hashlib' has no attribute 'pbkdf2_hex'
+2025-06-07 08:36:26 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 08:36:26 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 08:36:26 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 08:36:26 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 08:36:26 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 08:36:26 - database - INFO - База данных инициализирована успешно
+2025-06-07 08:36:26 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 08:36:26 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 08:36:38 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 08:36:38 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 08:36:38 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 08:36:38 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 08:36:38 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 08:36:38 - database - INFO - База данных инициализирована успешно
+2025-06-07 08:36:38 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 08:36:38 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 08:42:52 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 08:42:52 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 08:42:52 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 08:42:52 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 08:42:52 - database - INFO - База данных инициализирована успешно
+2025-06-07 08:42:52 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 08:42:52 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 08:54:19 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 08:54:27 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 08:54:48 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 08:54:48 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 08:54:48 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 08:54:48 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 08:54:48 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 08:54:48 - database - INFO - База данных инициализирована успешно
+2025-06-07 08:54:48 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 08:54:48 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 09:30:25 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 09:30:25 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 09:30:25 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 09:30:25 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 09:30:25 - database - INFO - База данных инициализирована успешно
+2025-06-07 09:30:25 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 09:30:25 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 09:30:41 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 09:31:09 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 09:31:09 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 09:31:09 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 09:31:09 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 09:31:09 - database - INFO - База данных инициализирована успешно
+2025-06-07 09:31:09 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 09:31:09 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 09:31:20 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 09:31:20 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 09:31:20 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 09:31:20 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 09:31:20 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 09:31:20 - database - INFO - База данных инициализирована успешно
+2025-06-07 09:31:20 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 09:31:20 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 09:31:25 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 09:31:25 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 09:31:25 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 09:31:25 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 09:31:25 - database - INFO - База данных инициализирована успешно
+2025-06-07 09:31:25 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 09:31:25 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 09:31:32 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 09:33:21 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 09:33:21 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 09:33:21 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 09:33:21 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 09:33:21 - database - INFO - База данных инициализирована успешно
+2025-06-07 09:33:21 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 09:33:21 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 09:35:28 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 09:35:37 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 09:35:37 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 09:35:37 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 09:35:37 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 09:35:37 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 09:35:37 - database - INFO - База данных инициализирована успешно
+2025-06-07 09:35:37 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 09:35:37 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 09:36:04 - database - ERROR - Ошибка выполнения запроса: table system_logs has no column named level
+2025-06-07 12:31:36 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:31:36 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:31:36 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:31:36 - database_migration - INFO - Таблица system_logs пересоздана с правильной структурой
+2025-06-07 12:31:36 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:31:37 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:31:37 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:31:37 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:31:47 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:31:47 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:31:47 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:31:47 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:31:47 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:31:47 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:31:47 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:33:22 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:33:22 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:33:22 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:33:22 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:33:22 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:33:22 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:33:22 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:33:26 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:33:26 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:33:26 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:33:26 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:33:26 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:33:26 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:33:26 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:33:30 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:33:30 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:33:30 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:33:30 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:33:30 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:33:30 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:33:30 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:35:19 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:35:19 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:35:19 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:35:19 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:35:19 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:35:19 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:35:19 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:35:23 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:35:23 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:35:23 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:35:23 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:35:23 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:35:23 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:35:23 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:36:12 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:36:12 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:36:12 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:36:12 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:36:12 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:36:12 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:36:12 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:36:16 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:36:16 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:36:16 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:36:16 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:36:16 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:36:16 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:36:16 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:38:03 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:38:03 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:38:03 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:38:03 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:38:03 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:38:03 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:38:03 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:38:36 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:38:36 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:38:36 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:38:36 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:38:36 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:38:36 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:38:36 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:45:57 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:45:57 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:45:57 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:45:57 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:45:57 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:45:57 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:45:57 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:46:14 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:46:14 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:46:14 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:46:14 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:46:14 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:46:14 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:46:14 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:49:48 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:49:48 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:49:48 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:49:48 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:49:48 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:49:48 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:49:48 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:49:59 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:49:59 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:49:59 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:49:59 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:49:59 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:49:59 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:49:59 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db
+2025-06-07 12:50:47 - database_migration - INFO - Текущая версия БД: 1
+2025-06-07 12:50:47 - database_migration - INFO - Необходимо обновление до версии 2
+2025-06-07 12:50:47 - database_migration - INFO - База данных уже обновлена до версии 2
+2025-06-07 12:50:47 - database_migration - INFO - База данных успешно обновлена до версии 2
+2025-06-07 12:50:47 - database - INFO - База данных инициализирована успешно
+2025-06-07 12:50:47 - database - INFO - Автоматическое резервное копирование настроено
+2025-06-07 12:50:47 - database - INFO - База данных инициализирована: C:\Thesis\face_attendance_system\data\database.db

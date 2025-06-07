@@ -1,5 +1,6 @@
 """
 Главное окно автоматизированной системы распознавания лиц
+Упрощенная версия для совместимости с существующей системой
 """
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                            QLabel, QPushButton, QStackedWidget, QFrame,
@@ -179,7 +180,6 @@ class MainWindow(QMainWindow):
                     padding: 15px;
                     text-align: left;
                     border-radius: 8px;
-                    margin: 5px 10px;
                 }
                 QPushButton:hover {
                     background-color: rgba(255, 255, 255, 0.1);

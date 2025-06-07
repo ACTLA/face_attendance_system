@@ -1,0 +1,76 @@
+{
+    "database": {
+        "path": "C:\\Thesis\\face_attendance_system\\data\\database.db",
+        "url": "sqlite:///C:\\Thesis\\face_attendance_system\\data\\database.db",
+        "backup_enabled": true,
+        "backup_interval_hours": 24
+    },
+    "camera": {
+        "index": 0,
+        "width": 640,
+        "height": 480,
+        "fps": 30,
+        "buffer_size": 1,
+        "auto_exposure": true,
+        "brightness": 128,
+        "contrast": 128
+    },
+    "recognition": {
+        "tolerance": 0.6,
+        "model": "hog",
+        "resize_scale": 0.25,
+        "min_face_size": 50,
+        "max_faces_per_frame": 10,
+        "recognition_interval_seconds": 2,
+        "confidence_threshold": 0.5,
+        "use_gpu": false
+    },
+    "performance": {
+        "max_workers": 2,
+        "frame_skip": 3,
+        "queue_size": 5,
+        "enable_multithreading": true,
+        "memory_limit_mb": 512,
+        "cache_size": 1000
+    },
+    "ui": {
+        "window_title": "Автоматизированная система распознавания лиц - Fast Solutions LLC",
+        "company_name": "Fast Solutions LLC",
+        "window_min_width": 1000,
+        "window_min_height": 700,
+        "window_default_width": 1200,
+        "window_default_height": 800,
+        "theme": "light",
+        "language": "ru",
+        "auto_save_layout": true
+    },
+    "colors": {
+        "primary_color": "#3b5dd4",
+        "secondary_color": "#5cb85c",
+        "danger_color": "#d9534f",
+        "warning_color": "#f39c12",
+        "success_color": "#28a745",
+        "info_color": "#17a2b8",
+        "dark_color": "#343a40",
+        "light_color": "#f8f9fa"
+    },
+    "security": {
+        "default_admin_username": "admin",
+        "default_admin_password": "admin123",
+        "password_min_length": 6,
+        "session_timeout_minutes": 30,
+        "max_login_attempts": 5,
+        "lockout_duration_minutes": 15,
+        "enable_encryption": false,
+        "salt_rounds": 12
+    },
+    "logging": {
+        "level": 20,
+        "file_enabled": true,
+        "console_enabled": true,
+        "max_file_size_mb": 10,
+        "backup_count": 5,
+        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "date_format": "%Y-%m-%d %H:%M:%S"
+    }
+}

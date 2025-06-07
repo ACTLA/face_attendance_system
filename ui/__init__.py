@@ -8,7 +8,7 @@ from .face_recognition_widget import FaceRecognitionWidget
 
 __all__ = [
     'LoginWindow',
-    'MainWindow',
-    'AddEmployeeDialog',
-    'FaceAttendanceWidget'
+    'MainWindow', 
+    'AddUserDialog',
+    'FaceRecognitionWidget'
 ]
