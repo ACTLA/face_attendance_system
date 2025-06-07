@@ -73,17 +73,9 @@ class LoginWindow(QWidget):
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
-        # Подзаголовок
-        subtitle_label = QLabel("Авторизация администратора")
-        subtitle_label.setFont(QFont("Arial", 16))
-        subtitle_label.setStyleSheet("color: #666; margin-bottom: 30px;")
-        subtitle_label.setAlignment(Qt.AlignCenter)
-        subtitle_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        subtitle_label.setWordWrap(True)
         
         # Добавляем заголовки
         layout.addWidget(title_label)
-        layout.addWidget(subtitle_label)
         
         # Растягивающийся элемент для центрирования
         layout.addSpacerItem(QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Fixed))
@@ -126,7 +118,7 @@ class LoginWindow(QWidget):
         self.remember_checkbox.setStyleSheet(self.get_checkbox_style())
         
         # Login button
-        self.login_button = QPushButton("🔐 Войти в систему")
+        self.login_button = QPushButton("Войти в систему")
         self.login_button.setFont(QFont("Arial", 16, QFont.Bold))
         self.login_button.setCursor(Qt.PointingHandCursor)
         self.login_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -248,7 +240,7 @@ class LoginWindow(QWidget):
         
         # Восстановление кнопки
         self.login_button.setEnabled(True)
-        self.login_button.setText("🔐 Войти в систему")
+        self.login_button.setText("Войти в систему")
         
         if admin_data:
             self.login_successful.emit(admin_data)
