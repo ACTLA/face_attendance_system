@@ -31,10 +31,13 @@ class FaceRecognitionWidget(QWidget):
         self.is_camera_active = False
         self.current_user_info = None
         
+        # Флаг для предотвращения множественных обработок
+        self._processing_frame = False
+        
         self.init_ui()
         
-        # Подключение к менеджеру камеры
-        camera_manager.frame_ready.connect(self.on_frame_ready)
+        # УБИРАЕМ подключение к frame_ready сигналу - он вызывает вылеты
+        # Используем только прямые callbacks
         camera_manager.camera_error.connect(self.on_camera_error)
     
     def init_ui(self):
@@ -254,68 +257,81 @@ class FaceRecognitionWidget(QWidget):
     
     def show_camera_placeholder(self):
         """Показать заглушку камеры"""
-        self.video_label.clear()
-        self.video_label.setText("📷\n\nКамера выключена\n\nНажмите 'Запустить'\nдля начала распознавания")
+        try:
+            self.video_label.clear()
+            self.video_label.setText("📷\n\nКамера выключена\n\nНажмите 'Запустить'\nдля начала распознавания")
+        except Exception as e:
+            print(f"Ошибка отображения заглушки: {e}")
     
     def start_recognition(self):
         """Запуск распознавания лиц"""
         if self.is_camera_active:
             return
         
-        # Подписка на кадры камеры для распознавания
-        camera_manager.subscribe_to_frames(self.process_frame_for_recognition)
-        
-        # Запуск камеры
-        if camera_manager.start_camera():
-            self.is_camera_active = True
-            self.start_button.setEnabled(False)
-            self.stop_button.setEnabled(True)
+        try:
+            # Подписка на кадры камеры для распознавания
+            camera_manager.subscribe_to_frames(self.process_frame_for_recognition)
+            # Подписка на кадры для отображения
+            camera_manager.subscribe_to_frames(self.on_frame_ready)
             
-            self.status_label.setText("ПОИСК ЛИЦ...")
-            self.status_label.setStyleSheet(f"""
-                QLabel {{
-                    background-color: {WARNING_COLOR};
-                    color: white;
-                    padding: 10px;
-                    border-radius: 8px;
-                    margin: 10px 0;
-                }}
-            """)
-        else:
-            QMessageBox.critical(self, "Ошибка", "Не удалось запустить камеру")
+            # Запуск камеры
+            if camera_manager.start_camera():
+                self.is_camera_active = True
+                self.start_button.setEnabled(False)
+                self.stop_button.setEnabled(True)
+                
+                self.status_label.setText("ПОИСК ЛИЦ...")
+                self.status_label.setStyleSheet(f"""
+                    QLabel {{
+                        background-color: {WARNING_COLOR};
+                        color: white;
+                        padding: 10px;
+                        border-radius: 8px;
+                        margin: 10px 0;
+                    }}
+                """)
+            else:
+                QMessageBox.critical(self, "Ошибка", "Не удалось запустить камеру")
+        except Exception as e:
+            print(f"Ошибка запуска распознавания: {e}")
+            QMessageBox.critical(self, "Ошибка", f"Ошибка запуска: {str(e)}")
     
     def stop_recognition(self):
         """Остановка распознавания лиц"""
         if not self.is_camera_active:
             return
         
-        self.is_camera_active = False
-        
-        # Отписка от кадров
-        camera_manager.unsubscribe_from_frames(self.process_frame_for_recognition)
-        
-        # Остановка камеры
-        camera_manager.stop_camera()
-        
-        # Обновление UI
-        self.start_button.setEnabled(True)
-        self.stop_button.setEnabled(False)
-        
-        self.show_camera_placeholder()
-        
-        self.status_label.setText("КАМЕРА ВЫКЛЮЧЕНА")
-        self.status_label.setStyleSheet("""
-            QLabel {
-                background-color: #6c757d;
-                color: white;
-                padding: 10px;
-                border-radius: 8px;
-                margin: 10px 0;
-            }
-        """)
-        
-        # Очистка информации о пользователе
-        self.clear_user_info()
+        try:
+            self.is_camera_active = False
+            
+            # Отписка от кадров
+            camera_manager.unsubscribe_from_frames(self.process_frame_for_recognition)
+            camera_manager.unsubscribe_from_frames(self.on_frame_ready)
+            
+            # Остановка камеры
+            camera_manager.stop_camera()
+            
+            # Обновление UI
+            self.start_button.setEnabled(True)
+            self.stop_button.setEnabled(False)
+            
+            self.show_camera_placeholder()
+            
+            self.status_label.setText("КАМЕРА ВЫКЛЮЧЕНА")
+            self.status_label.setStyleSheet("""
+                QLabel {
+                    background-color: #6c757d;
+                    color: white;
+                    padding: 10px;
+                    border-radius: 8px;
+                    margin: 10px 0;
+                }
+            """)
+            
+            # Очистка информации о пользователе
+            self.clear_user_info()
+        except Exception as e:
+            print(f"Ошибка остановки распознавания: {e}")
     
     def on_frame_ready(self, frame):
         """Обработка нового кадра с камеры"""
@@ -323,18 +339,50 @@ class FaceRecognitionWidget(QWidget):
             return
         
         try:
-            # Отображение кадра
-            self.display_frame(frame)
+            # Отображение кадра - ПРОСТОЕ без сложных проверок
+            self.display_frame_simple(frame)
             
         except Exception as e:
             print(f"Ошибка отображения кадра: {e}")
     
+    def display_frame_simple(self, frame):
+        """Простое отображение кадра без сложных проверок"""
+        try:
+            if frame is None or frame.size == 0:
+                return
+                
+            # Простая конвертация
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            height, width, channel = rgb_frame.shape
+            bytes_per_line = 3 * width
+            
+            # Создание изображения
+            q_image = QImage(rgb_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(q_image)
+            
+            # Масштабирование
+            label_size = self.video_label.size()
+            if label_size.width() > 0 and label_size.height() > 0:
+                scaled_pixmap = pixmap.scaled(label_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.video_label.setPixmap(scaled_pixmap)
+            
+        except Exception as e:
+            # При любой ошибке просто пропускаем кадр
+            pass
+    
     def process_frame_for_recognition(self, frame):
         """Обработка кадра для распознавания лиц"""
-        if not self.is_camera_active:
+        if not self.is_camera_active or self._processing_frame:
             return
         
         try:
+            # Установка флага обработки
+            self._processing_frame = True
+            
+            # Проверка валидности кадра
+            if frame is None or frame.size == 0:
+                return
+            
             # Распознавание лиц
             matches = self.recognition_engine.process_frame(frame)
             
@@ -349,37 +397,9 @@ class FaceRecognitionWidget(QWidget):
                 
         except Exception as e:
             print(f"Ошибка распознавания: {e}")
-    
-    def display_frame(self, frame):
-        """Отображение кадра в UI"""
-        try:
-            # Конвертация в RGB
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            height, width, channel = rgb_frame.shape
-            bytes_per_line = 3 * width
-            
-            # Создание QImage
-            q_image = QImage(rgb_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
-            
-            # Масштабирование для отображения
-            pixmap = QPixmap.fromImage(q_image)
-            scaled_pixmap = pixmap.scaled(
-                self.video_label.size(), 
-                Qt.KeepAspectRatio, 
-                Qt.SmoothTransformation
-            )
-            
-            self.video_label.setPixmap(scaled_pixmap)
-            self.video_label.setStyleSheet("""
-                QLabel {
-                    border: 3px solid #28a745;
-                    border-radius: 10px;
-                    background-color: #000;
-                }
-            """)
-            
-        except Exception as e:
-            print(f"Ошибка отображения кадра: {e}")
+        finally:
+            # Сброс флага обработки
+            self._processing_frame = False
     
     def on_face_recognized(self, match):
         """Обработка распознанного лица"""
@@ -393,7 +413,10 @@ class FaceRecognitionWidget(QWidget):
             self.update_user_info(user, match.confidence)
             
             # Добавление записи в базу данных
-            self.db.add_recognition_log(match.user_id, match.confidence, 'SUCCESS')
+            try:
+                self.db.add_recognition_log(match.user_id, match.confidence, 'SUCCESS')
+            except Exception as e:
+                print(f"Ошибка записи в БД: {e}")
             
             # Обновление статуса
             self.update_status(f"РАСПОЗНАН ({match.confidence*100:.1f}%)", success=True)
@@ -409,123 +432,156 @@ class FaceRecognitionWidget(QWidget):
     
     def update_user_info(self, user, confidence):
         """Обновление информации о пользователе"""
-        self.current_user_info = user
-        
-        # Имя
-        self.user_name.setText(user['full_name'])
-        
-        # ID
-        self.user_id.setText(f"ID: {user['user_id']}")
-        
-        # Уверенность
-        self.confidence_label.setText(f"Уверенность: {int(confidence * 100)}%")
-        
-        # Фото
-        self.load_user_photo(user.get('photo_path'))
+        try:
+            self.current_user_info = user
+            
+            # Имя
+            self.user_name.setText(user['full_name'])
+            
+            # ID
+            self.user_id.setText(f"ID: {user['user_id']}")
+            
+            # Уверенность
+            self.confidence_label.setText(f"Уверенность: {int(confidence * 100)}%")
+            
+            # Фото
+            self.load_user_photo(user.get('photo_path'))
+        except Exception as e:
+            print(f"Ошибка обновления информации о пользователе: {e}")
     
     def load_user_photo(self, photo_path):
         """Загрузка фото пользователя"""
-        if photo_path:
-            full_path = os.path.join(USER_PHOTOS_DIR, photo_path)
-            if os.path.exists(full_path):
-                try:
-                    pixmap = QPixmap(full_path)
-                    if not pixmap.isNull():
-                        scaled_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                        self.user_photo.setPixmap(scaled_pixmap)
-                        self.user_photo.setStyleSheet("""
-                            QLabel {
-                                border: 2px solid #28a745;
-                                border-radius: 50px;
-                                background-color: white;
-                            }
-                        """)
-                        return
-                except Exception as e:
-                    print(f"Ошибка загрузки фото: {e}")
-        
-        # Фото по умолчанию
-        self.set_default_user_photo()
+        try:
+            if photo_path:
+                full_path = os.path.join(USER_PHOTOS_DIR, photo_path)
+                if os.path.exists(full_path):
+                    try:
+                        pixmap = QPixmap(full_path)
+                        if not pixmap.isNull():
+                            scaled_pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                            self.user_photo.setPixmap(scaled_pixmap)
+                            self.user_photo.setStyleSheet("""
+                                QLabel {
+                                    border: 2px solid #28a745;
+                                    border-radius: 50px;
+                                    background-color: white;
+                                }
+                            """)
+                            return
+                    except Exception as e:
+                        print(f"Ошибка загрузки фото: {e}")
+            
+            # Фото по умолчанию
+            self.set_default_user_photo()
+        except Exception as e:
+            print(f"Ошибка в load_user_photo: {e}")
+            self.set_default_user_photo()
     
     def set_default_user_photo(self):
         """Установка фото по умолчанию"""
-        self.user_photo.clear()
-        self.user_photo.setText("👤")
-        self.user_photo.setStyleSheet("""
-            QLabel {
-                border: 2px solid #28a745;
-                border-radius: 50px;
-                background-color: #f8f9fa;
-                font-size: 40px;
-                color: #28a745;
-            }
-        """)
+        try:
+            self.user_photo.clear()
+            self.user_photo.setText("👤")
+            self.user_photo.setStyleSheet("""
+                QLabel {
+                    border: 2px solid #28a745;
+                    border-radius: 50px;
+                    background-color: #f8f9fa;
+                    font-size: 40px;
+                    color: #28a745;
+                }
+            """)
+        except Exception as e:
+            print(f"Ошибка установки фото по умолчанию: {e}")
     
     def clear_user_photo(self):
         """Очистка фото пользователя"""
-        self.user_photo.clear()
-        self.user_photo.setText("❓")
-        self.user_photo.setStyleSheet("""
-            QLabel {
-                border: 2px solid #ddd;
-                border-radius: 50px;
-                background-color: #f8f9fa;
-                font-size: 40px;
-                color: #999;
-            }
-        """)
+        try:
+            self.user_photo.clear()
+            self.user_photo.setText("❓")
+            self.user_photo.setStyleSheet("""
+                QLabel {
+                    border: 2px solid #ddd;
+                    border-radius: 50px;
+                    background-color: #f8f9fa;
+                    font-size: 40px;
+                    color: #999;
+                }
+            """)
+        except Exception as e:
+            print(f"Ошибка очистки фото: {e}")
     
     def clear_user_info(self):
         """Очистка информации о пользователе"""
-        self.current_user_info = None
-        self.user_name.setText("---")
-        self.user_id.setText("---")
-        self.confidence_label.setText("Уверенность: 0%")
-        self.clear_user_photo()
+        try:
+            self.current_user_info = None
+            self.user_name.setText("---")
+            self.user_id.setText("---")
+            self.confidence_label.setText("Уверенность: 0%")
+            self.clear_user_photo()
+        except Exception as e:
+            print(f"Ошибка очистки информации о пользователе: {e}")
     
     def update_status(self, text, success=False):
         """Обновление статуса"""
-        self.status_label.setText(text)
-        
-        if success:
-            color = SECONDARY_COLOR
-        elif "ПОИСК" in text:
-            color = WARNING_COLOR
-        else:
-            color = "#6c757d"
-        
-        self.status_label.setStyleSheet(f"""
-            QLabel {{
-                background-color: {color};
-                color: white;
-                padding: 10px;
-                border-radius: 8px;
-                margin: 10px 0;
-            }}
-        """)
+        try:
+            self.status_label.setText(text)
+            
+            if success:
+                color = SECONDARY_COLOR
+            elif "ПОИСК" in text:
+                color = WARNING_COLOR
+            else:
+                color = "#6c757d"
+            
+            self.status_label.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {color};
+                    color: white;
+                    padding: 10px;
+                    border-radius: 8px;
+                    margin: 10px 0;
+                }}
+            """)
+        except Exception as e:
+            print(f"Ошибка обновления статуса: {e}")
     
     def add_to_logs(self, log_text):
         """Добавление записи в список логов"""
-        item = QListWidgetItem(log_text)
-        item.setFont(QFont("Arial", 9))
-        self.logs_list.insertItem(0, item)
-        
-        # Ограничение количества записей
-        while self.logs_list.count() > 10:
-            self.logs_list.takeItem(10)
+        try:
+            item = QListWidgetItem(log_text)
+            item.setFont(QFont("Arial", 9))
+            self.logs_list.insertItem(0, item)
+            
+            # Ограничение количества записей
+            while self.logs_list.count() > 10:
+                self.logs_list.takeItem(10)
+        except Exception as e:
+            print(f"Ошибка добавления в лог: {e}")
     
     def update_time(self):
         """Обновление времени"""
-        current_time = QDateTime.currentDateTime()
-        self.time_label.setText(current_time.toString("hh:mm:ss\ndd.MM.yyyy"))
+        try:
+            current_time = QDateTime.currentDateTime()
+            self.time_label.setText(current_time.toString("hh:mm:ss\ndd.MM.yyyy"))
+        except Exception as e:
+            print(f"Ошибка обновления времени: {e}")
     
     def on_camera_error(self, error_message):
         """Обработка ошибки камеры"""
-        self.stop_recognition()
-        QMessageBox.critical(self, "Ошибка камеры", error_message)
+        try:
+            print(f"Ошибка камеры: {error_message}")
+            self.stop_recognition()
+            QMessageBox.critical(self, "Ошибка камеры", error_message)
+        except Exception as e:
+            print(f"Ошибка обработки ошибки камеры: {e}")
     
     def closeEvent(self, event):
         """Обработка закрытия виджета"""
-        if self.is_camera_active:
-            self.stop_recognition()
-        event.accept()
+        try:
+            if self.is_camera_active:
+                self.stop_recognition()
+            event.accept()
+        except Exception as e:
+            print(f"Ошибка при закрытии виджета: {e}")
+            event.accept()

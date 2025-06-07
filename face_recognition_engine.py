@@ -98,24 +98,27 @@ class FaceRecognitionEngine:
         with self._cache_lock:
             self._cached_users = []
             
-            users = self.db.get_all_users()
-            
-            for user in users:
-                if user['face_encoding']:
-                    try:
-                        encoding = np.array(user['face_encoding'])
-                        if encoding.shape == (128,):  # Проверка размерности
-                            cached_user = CachedUser(
-                                id=user['id'],
-                                user_id=user['user_id'],
-                                full_name=user['full_name'],
-                                encoding=encoding
-                            )
-                            self._cached_users.append(cached_user)
-                    except Exception as e:
-                        self.logger.warning(f"Пропуск пользователя {user['user_id']}: {e}")
-            
-            self.logger.info(f"Загружено {len(self._cached_users)} кодировок лиц")
+            try:
+                users = self.db.get_all_users()
+                
+                for user in users:
+                    if user['face_encoding']:
+                        try:
+                            encoding = np.array(user['face_encoding'])
+                            if encoding.shape == (128,):  # Проверка размерности
+                                cached_user = CachedUser(
+                                    id=user['id'],
+                                    user_id=user['user_id'],
+                                    full_name=user['full_name'],
+                                    encoding=encoding
+                                )
+                                self._cached_users.append(cached_user)
+                        except Exception as e:
+                            self.logger.warning(f"Пропуск пользователя {user['user_id']}: {e}")
+                
+                self.logger.info(f"Загружено {len(self._cached_users)} кодировок лиц")
+            except Exception as e:
+                self.logger.error(f"Ошибка доступа к базе данных: {e}")
     
     def _load_from_cache(self):
         """Загрузка из кэша"""
@@ -145,14 +148,20 @@ class FaceRecognitionEngine:
     def reload_face_encodings(self):
         """Принудительная перезагрузка кодировок лиц"""
         self.logger.info("Перезагрузка кодировок лиц...")
-        self._load_from_database()
-        self._save_to_cache()
-        self._last_recognitions.clear()
+        try:
+            self._load_from_database()
+            self._save_to_cache()
+            self._last_recognitions.clear()
+        except Exception as e:
+            self.logger.error(f"Ошибка перезагрузки кодировок: {e}")
     
     def process_frame(self, frame: np.ndarray) -> List[FaceMatch]:
         """
         Обработка кадра для распознавания лиц
         """
+        if frame is None or frame.size == 0:
+            return []
+        
         start_time = time.time()
         
         # Пропуск кадров для производительности
@@ -170,10 +179,14 @@ class FaceRecognitionEngine:
             # Распознавание каждого лица
             matches = []
             for location, encoding in zip(face_locations, face_encodings):
-                match = self._recognize_face(location, encoding)
-                if match and self._should_process_recognition(match):
-                    matches.append(match)
-                    self._update_last_recognition(match)
+                try:
+                    match = self._recognize_face(location, encoding)
+                    if match and self._should_process_recognition(match):
+                        matches.append(match)
+                        self._update_last_recognition(match)
+                except Exception as e:
+                    self.logger.error(f"Ошибка распознавания отдельного лица: {e}")
+                    continue
             
             # Обновление статистики
             processing_time = time.time() - start_time
@@ -188,29 +201,52 @@ class FaceRecognitionEngine:
     def _detect_faces(self, frame: np.ndarray) -> Tuple[List, List]:
         """Детекция лиц на кадре"""
         try:
+            # Проверка валидности кадра
+            if frame is None or frame.size == 0:
+                return [], []
+            
             # Уменьшение кадра для ускорения
-            small_frame = cv2.resize(frame, (0, 0), fx=RESIZE_SCALE, fy=RESIZE_SCALE)
-            rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+            try:
+                small_frame = cv2.resize(frame, (0, 0), fx=RESIZE_SCALE, fy=RESIZE_SCALE)
+                if small_frame.size == 0:
+                    return [], []
+                
+                rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+            except Exception as e:
+                self.logger.error(f"Ошибка обработки кадра: {e}")
+                return [], []
             
             # Поиск лиц (используем быстрый HOG детектор)
-            face_locations = face_recognition.face_locations(rgb_frame, model='hog')
+            try:
+                face_locations = face_recognition.face_locations(rgb_frame, model='hog')
+            except Exception as e:
+                self.logger.error(f"Ошибка поиска лиц: {e}")
+                return [], []
             
             if not face_locations:
                 return [], []
             
             # Создание кодировок
-            face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+            try:
+                face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+            except Exception as e:
+                self.logger.error(f"Ошибка создания кодировок: {e}")
+                return [], []
             
             # Масштабирование координат обратно
             scaled_locations = []
             for top, right, bottom, left in face_locations:
-                scaled_location = (
-                    int(top / RESIZE_SCALE),
-                    int(right / RESIZE_SCALE),
-                    int(bottom / RESIZE_SCALE),
-                    int(left / RESIZE_SCALE)
-                )
-                scaled_locations.append(scaled_location)
+                try:
+                    scaled_location = (
+                        int(top / RESIZE_SCALE),
+                        int(right / RESIZE_SCALE),
+                        int(bottom / RESIZE_SCALE),
+                        int(left / RESIZE_SCALE)
+                    )
+                    scaled_locations.append(scaled_location)
+                except Exception as e:
+                    self.logger.error(f"Ошибка масштабирования координат: {e}")
+                    continue
             
             return scaled_locations, face_encodings
             
@@ -221,33 +257,54 @@ class FaceRecognitionEngine:
     def _recognize_face(self, location: Tuple[int, int, int, int], 
                        encoding: np.ndarray) -> Optional[FaceMatch]:
         """Распознавание конкретного лица"""
-        with self._cache_lock:
-            if not self._cached_users:
-                return None
-        
         try:
+            with self._cache_lock:
+                if not self._cached_users:
+                    return None
+                
+                # Создаем копию для безопасности
+                cached_users = self._cached_users.copy()
+            
+            if not cached_users:
+                return None
+            
             # Извлечение кодировок для сравнения
-            known_encodings = [user.encoding for user in self._cached_users]
+            try:
+                known_encodings = [user.encoding for user in cached_users]
+            except Exception as e:
+                self.logger.error(f"Ошибка извлечения кодировок: {e}")
+                return None
             
             # Быстрое сравнение с использованием векторизации
-            distances = face_recognition.face_distance(known_encodings, encoding)
+            try:
+                distances = face_recognition.face_distance(known_encodings, encoding)
+            except Exception as e:
+                self.logger.error(f"Ошибка сравнения лиц: {e}")
+                return None
+            
+            if len(distances) == 0:
+                return None
             
             # Поиск лучшего совпадения
-            min_distance_idx = np.argmin(distances)
-            min_distance = distances[min_distance_idx]
-            
-            if min_distance <= FACE_RECOGNITION_TOLERANCE:
-                user = self._cached_users[min_distance_idx]
-                confidence = 1.0 - min_distance
+            try:
+                min_distance_idx = np.argmin(distances)
+                min_distance = distances[min_distance_idx]
                 
-                return FaceMatch(
-                    user_id=user.id,
-                    user_code=user.user_id,
-                    full_name=user.full_name,
-                    confidence=confidence,
-                    face_location=location,
-                    timestamp=time.time()
-                )
+                if min_distance <= FACE_RECOGNITION_TOLERANCE:
+                    user = cached_users[min_distance_idx]
+                    confidence = 1.0 - min_distance
+                    
+                    return FaceMatch(
+                        user_id=user.id,
+                        user_code=user.user_id,
+                        full_name=user.full_name,
+                        confidence=confidence,
+                        face_location=location,
+                        timestamp=time.time()
+                    )
+            except Exception as e:
+                self.logger.error(f"Ошибка поиска совпадения: {e}")
+                return None
             
             return None
             
@@ -257,46 +314,60 @@ class FaceRecognitionEngine:
     
     def _should_process_recognition(self, match: FaceMatch) -> bool:
         """Проверка cooldown для предотвращения спама"""
-        user_id = match.user_id
-        current_time = match.timestamp
-        
-        if user_id in self._last_recognitions:
-            last_time = self._last_recognitions[user_id]
-            if current_time - last_time < RECOGNITION_COOLDOWN:
-                return False
-        
-        return True
+        try:
+            user_id = match.user_id
+            current_time = match.timestamp
+            
+            if user_id in self._last_recognitions:
+                last_time = self._last_recognitions[user_id]
+                if current_time - last_time < RECOGNITION_COOLDOWN:
+                    return False
+            
+            return True
+        except Exception as e:
+            self.logger.error(f"Ошибка проверки cooldown: {e}")
+            return True  # В случае ошибки разрешаем обработку
     
     def _update_last_recognition(self, match: FaceMatch):
         """Обновление времени последнего распознавания"""
-        self._last_recognitions[match.user_id] = match.timestamp
-        
-        # Очистка старых записей
-        current_time = time.time()
-        expired_users = [
-            user_id for user_id, last_time in self._last_recognitions.items()
-            if current_time - last_time > RECOGNITION_COOLDOWN * 3
-        ]
-        
-        for user_id in expired_users:
-            del self._last_recognitions[user_id]
+        try:
+            self._last_recognitions[match.user_id] = match.timestamp
+            
+            # Очистка старых записей
+            current_time = time.time()
+            expired_users = [
+                user_id for user_id, last_time in self._last_recognitions.items()
+                if current_time - last_time > RECOGNITION_COOLDOWN * 3
+            ]
+            
+            for user_id in expired_users:
+                del self._last_recognitions[user_id]
+        except Exception as e:
+            self.logger.error(f"Ошибка обновления времени распознавания: {e}")
     
     def _update_stats(self, processing_time: float, faces_detected: int, faces_recognized: int):
         """Обновление статистики"""
-        self._stats['frames_processed'] += 1
-        self._stats['faces_detected'] += faces_detected
-        self._stats['faces_recognized'] += faces_recognized
-        
-        # Скользящее среднее времени обработки
-        alpha = 0.1
-        self._stats['processing_time_avg'] = (
-            alpha * processing_time + 
-            (1 - alpha) * self._stats['processing_time_avg']
-        )
+        try:
+            self._stats['frames_processed'] += 1
+            self._stats['faces_detected'] += faces_detected
+            self._stats['faces_recognized'] += faces_recognized
+            
+            # Скользящее среднее времени обработки
+            alpha = 0.1
+            self._stats['processing_time_avg'] = (
+                alpha * processing_time + 
+                (1 - alpha) * self._stats['processing_time_avg']
+            )
+        except Exception as e:
+            self.logger.error(f"Ошибка обновления статистики: {e}")
     
     def get_stats(self) -> dict:
         """Получение статистики работы"""
-        return self._stats.copy()
+        try:
+            return self._stats.copy()
+        except Exception as e:
+            self.logger.error(f"Ошибка получения статистики: {e}")
+            return {}
     
     def add_new_face(self, user_data: dict):
         """Добавление нового лица в кэш"""
@@ -342,14 +413,17 @@ class FaceRecognitionEngine:
     
     def clear_cache(self):
         """Очистка кэша"""
-        with self._cache_lock:
-            self._cached_users.clear()
-        self._last_recognitions.clear()
-        
-        if self._cache_file.exists():
-            try:
-                os.remove(self._cache_file)
-            except:
-                pass
-        
-        self.logger.info("Кэш кодировок лиц очищен")
+        try:
+            with self._cache_lock:
+                self._cached_users.clear()
+            self._last_recognitions.clear()
+            
+            if self._cache_file.exists():
+                try:
+                    os.remove(self._cache_file)
+                except:
+                    pass
+            
+            self.logger.info("Кэш кодировок лиц очищен")
+        except Exception as e:
+            self.logger.error(f"Ошибка очистки кэша: {e}")

@@ -7,7 +7,7 @@ import time
 import logging
 from typing import Optional, Callable
 import numpy as np
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 
 from config import CAMERA_INDEX, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS
 
@@ -18,8 +18,7 @@ class CameraManager(QObject):
     Singleton менеджер камеры с простой архитектурой
     """
     
-    # Сигналы PyQt
-    frame_ready = pyqtSignal(np.ndarray)
+    # Убираем numpy сигнал - он вызывает вылеты
     camera_started = pyqtSignal()
     camera_stopped = pyqtSignal()
     camera_error = pyqtSignal(str)
@@ -48,24 +47,40 @@ class CameraManager(QObject):
         
         # Подписчики на кадры
         self._frame_callbacks = []
+        self._callbacks_lock = threading.Lock()
         
         # Настройки
         self.camera_index = CAMERA_INDEX
+        
+        # Последний кадр для GUI
+        self._latest_frame = None
+        self._frame_lock = threading.Lock()
+        
+        # Таймер для GUI обновлений
+        self._gui_timer = QTimer()
+        self._gui_timer.timeout.connect(self._emit_frame_to_gui)
         
         self._initialized = True
         logger.info("CameraManager инициализирован")
     
     def subscribe_to_frames(self, callback: Callable[[np.ndarray], None]):
         """Подписаться на получение кадров"""
-        if callback not in self._frame_callbacks:
-            self._frame_callbacks.append(callback)
-            logger.debug(f"Добавлен подписчик на кадры")
+        with self._callbacks_lock:
+            if callback not in self._frame_callbacks:
+                self._frame_callbacks.append(callback)
+                logger.debug(f"Добавлен подписчик на кадры")
     
     def unsubscribe_from_frames(self, callback: Callable[[np.ndarray], None]):
         """Отписаться от получения кадров"""
-        if callback in self._frame_callbacks:
-            self._frame_callbacks.remove(callback)
-            logger.debug(f"Удален подписчик кадров")
+        with self._callbacks_lock:
+            if callback in self._frame_callbacks:
+                self._frame_callbacks.remove(callback)
+                logger.debug(f"Удален подписчик кадров")
+    
+    def get_latest_frame(self):
+        """Получить последний кадр безопасно"""
+        with self._frame_lock:
+            return self._latest_frame.copy() if self._latest_frame is not None else None
     
     def start_camera(self) -> bool:
         """Запуск камеры"""
@@ -109,6 +124,9 @@ class CameraManager(QObject):
             self._capture_thread = threading.Thread(target=self._capture_loop, daemon=True)
             self._capture_thread.start()
             
+            # Запуск GUI таймера
+            self._gui_timer.start(33)  # ~30 FPS
+            
             self.camera_started.emit()
             logger.info("Камера успешно запущена")
             return True
@@ -128,6 +146,9 @@ class CameraManager(QObject):
         
         logger.info("Остановка камеры...")
         self._is_running = False
+        
+        # Остановка GUI таймера
+        self._gui_timer.stop()
         
         # Ожидание завершения потока
         if self._capture_thread and self._capture_thread.is_alive():
@@ -167,43 +188,98 @@ class CameraManager(QObject):
     
     def _capture_loop(self):
         """Основной цикл захвата кадров"""
-        frame_interval = 1.0 / CAMERA_FPS
-        last_frame_time = 0
+        consecutive_errors = 0
+        max_consecutive_errors = 10
         
         while self._is_running:
             try:
-                current_time = time.time()
-                
-                # Контроль частоты кадров
-                if current_time - last_frame_time < frame_interval:
-                    time.sleep(0.001)
+                if not self._cap or not self._cap.isOpened():
+                    if self._is_running:
+                        logger.error("Камера отключена во время работы")
+                        break
                     continue
                 
                 ret, frame = self._cap.read()
                 if not ret or frame is None:
+                    consecutive_errors += 1
+                    if consecutive_errors >= max_consecutive_errors:
+                        if self._is_running:
+                            logger.error("Слишком много ошибок чтения кадров, остановка камеры")
+                            break
+                    
                     if self._is_running:
-                        logger.warning("Не удалось получить кадр")
                         time.sleep(0.1)
                     continue
                 
-                # Отправка кадра подписчикам
-                self._distribute_frame(frame.copy())
+                # Сброс счетчика ошибок при успешном чтении
+                consecutive_errors = 0
                 
-                # Отправка сигнала PyQt
-                self.frame_ready.emit(frame.copy())
+                # Проверка валидности кадра
+                if frame.size == 0:
+                    continue
                 
-                last_frame_time = current_time
+                # Сохранение последнего кадра для GUI
+                with self._frame_lock:
+                    self._latest_frame = frame.copy()
+                
+                # Отправка кадра подписчикам (без GUI)
+                self._distribute_frame(frame)
+                
+                # Небольшая пауза
+                time.sleep(0.01)
                 
             except Exception as e:
+                consecutive_errors += 1
+                if consecutive_errors >= max_consecutive_errors:
+                    if self._is_running:
+                        logger.error(f"Критическая ошибка в цикле захвата: {e}")
+                        break
+                
                 if self._is_running:
                     logger.error(f"Ошибка в цикле захвата: {e}")
                     time.sleep(0.1)
+        
+        # Если выходим из цикла по ошибке
+        if self._is_running and consecutive_errors >= max_consecutive_errors:
+            try:
+                self.camera_error.emit("Камера перестала отвечать")
+            except:
+                pass
+    
+    def _emit_frame_to_gui(self):
+        """Безопасная отправка кадра в GUI через таймер"""
+        if not self._is_running:
+            return
+            
+        frame = self.get_latest_frame()
+        if frame is not None:
+            # Вызываем GUI callback напрямую
+            try:
+                # Найдем GUI callback (обычно первый в списке)
+                with self._callbacks_lock:
+                    gui_callbacks = [cb for cb in self._frame_callbacks 
+                                   if 'display_frame' in str(cb) or 'on_frame_ready' in str(cb)]
+                
+                for callback in gui_callbacks:
+                    try:
+                        callback(frame.copy())
+                    except Exception as e:
+                        logger.error(f"Ошибка в GUI callback: {e}")
+            except Exception as e:
+                logger.error(f"Ошибка отправки кадра в GUI: {e}")
     
     def _distribute_frame(self, frame: np.ndarray):
-        """Распространение кадра всем подписчикам"""
-        for callback in self._frame_callbacks[:]:  # Копия списка для безопасности
+        """Распространение кадра подписчикам (кроме GUI)"""
+        with self._callbacks_lock:
+            callbacks_copy = self._frame_callbacks.copy()
+        
+        for callback in callbacks_copy:
             try:
-                callback(frame)
+                # Пропускаем GUI callbacks - они обрабатываются отдельно
+                if 'display_frame' in str(callback) or 'on_frame_ready' in str(callback):
+                    continue
+                    
+                callback(frame.copy())
             except Exception as e:
                 logger.error(f"Ошибка в callback: {e}")
     
@@ -217,6 +293,9 @@ class CameraManager(QObject):
                 logger.error(f"Ошибка при освобождении камеры: {e}")
             finally:
                 self._cap = None
+        
+        with self._frame_lock:
+            self._latest_frame = None
     
     def is_running(self) -> bool:
         """Проверка, работает ли камера"""
@@ -235,7 +314,8 @@ class CameraManager(QObject):
                 'fps': self._cap.get(cv2.CAP_PROP_FPS),
                 'backend': self._cap.getBackendName() if hasattr(self._cap, 'getBackendName') else 'unknown'
             }
-        except:
+        except Exception as e:
+            logger.error(f"Ошибка получения информации о камере: {e}")
             return {'status': 'error'}
     
     def __del__(self):
